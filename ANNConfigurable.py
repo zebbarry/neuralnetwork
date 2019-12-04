@@ -98,5 +98,5 @@ if __name__ == "__main__":
         #NN.train(x, y)
     
     #NN.saveWeights(NN)
-    NN = torch.load("NN")
+    #NN = torch.load("NN")
     NN.predict(xPredicted)
