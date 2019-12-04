@@ -21,13 +21,7 @@ trainloader = torch.utils.data.DataLoader(trainset, batch_size=64, shuffle=True)
                       #nn.Linear(64, 10),
                       #nn.LogSoftmax(dim=1))
 
-model = NeuralNetwork([784, 128, 64, 10])
-#model = torch.load("MINST")
-
-#image, target = trainset[0]
-
-#plt.imshow(image.numpy()[0], cmap='gray')
-#plt.show()
+model = NeuralNetwork([784, 256, 128, 64, 10])
 
 epochs = 5
 for e in range(epochs):
@@ -39,13 +33,30 @@ for e in range(epochs):
         running_loss += model.train(images, labels)
     else:
         print(f"Training loss: {running_loss/len(trainloader)}")
-        model.saveWeights("MNIST")
+
+#model.saveWeights("model")
+#model = torch.load("model")
 
 def image_test(num):
     image, target = trainset[num]
+    output = model.forward(image.view(image.shape[0], -1)).exp()
+
+    xAxis = range(output.size()[1])
+    yAxis = output.squeeze().detach().numpy()
     
     print("Desired: " + str(target))
-    print("Output: " + str(model.forward(image.view(image.shape[0], -1))))
+    print("Output: ")
+    for i in range(output.size()[1]):
+        print("#{}: {:.3f}".format(i, yAxis[i]))    
     
-    plt.imshow(image.numpy()[num], cmap='gray')
+    plt.figure(1)
+    plt.bar(xAxis, yAxis)
+    plt.figure(2)
+    plt.imshow(image.numpy()[0], cmap='gray')
     plt.show()
+        
+    return output
+    
+    
+    
+image_test(0)

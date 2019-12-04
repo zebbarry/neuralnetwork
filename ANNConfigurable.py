@@ -17,7 +17,7 @@ class NeuralNetwork(nn.Module):
         length = len(networkDimen)
         self.numLayers = length
         self.lrate = lrate
-        self.hiddenList = []
+        self.hiddenList = nn.ModuleList()
         
         for inDimen, outDimen in zip(networkDimen, networkDimen[1:length-1]):    
             self.hiddenList.append(net_block(inDimen, outDimen))
@@ -54,11 +54,14 @@ class NeuralNetwork(nn.Module):
         return self.loss.item()
         
         
-    def saveWeights(self, network):
+    def saveWeights(self, name):
         # Saves network using PyTorch internal storage
-        torch.save(network, "NN")
-        # Can be loaded using:
-        # torch.load("NN")
+        torch.save(self, name)
+        
+        
+    def loadWeights(self, name):
+        # Loads network using PyTorch internal storage
+        self = torch.load(name)    
         
         
     def predict(self, inputVal):
@@ -74,9 +77,9 @@ class NeuralNetwork(nn.Module):
         
 
 if __name__ == "__main__":
-    x = torch.tensor(([2, 9], [1, 5], [3, 6]), dtype=torch.float)   # 3 x 2 tensor
-    y = torch.tensor(([92], [100], [89]), dtype=torch.float)        # 3 x 1 tensor
-    xPredicted = torch.tensor(([4, 8]), dtype=torch.float)          # 1 x 2 tensor
+    x = torch.tensor(([2, 9], [1, 5], [3, 6]), dtype=torch.long)   # 3 x 2 tensor
+    y = torch.tensor(([92], [100], [89]), dtype=torch.long)        # 3 x 1 tensor
+    xPredicted = torch.tensor(([4, 8]), dtype=torch.long)          # 1 x 2 tensor
     
     # Scale units
     xMax, _ = torch.max(x, 0)
@@ -92,10 +95,10 @@ if __name__ == "__main__":
     
     
     # Train
-    #iterations = 1000   # Number of training iterations
-    #for i in range(1000):
-        #print("#" + str(i) + " Loss: " + str(torch.mean((y - NN(x)) ** 2).detach().item()))
-        #NN.train(x, y)
+    iterations = 1000   # Number of training iterations
+    for i in range(1000):
+        loss = NN.train(x, y)
+        print("#" + str(i) + " Loss: " + str(loss))
     
     #NN.saveWeights(NN)
     #NN = torch.load("NN")
