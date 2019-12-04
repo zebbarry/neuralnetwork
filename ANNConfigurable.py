@@ -1,62 +1,57 @@
 import torch
 import torch.nn as nn
 
-class Neural_Network(nn.Module):
+
+def net_block(inParam, outParam):
+    return nn.Sequential(
+        nn.Linear(inParam, outParam),
+        nn.ReLU())
+
+
+class NeuralNetwork(nn.Module):
     
-    def __init__(self, networkDimen):
-        super(Neural_Network, self).__init__()
+    def __init__(self, networkDimen, lrate=0.003):
+        super(NeuralNetwork, self).__init__()
         # Network parameters defining number of nodes in each layer
-        # netwrokDimensions = [3, 2, 1] - 3 input 2 hidden 1 output
-        self.layers = len(networkDimen)
-        self.hidden = nn.ModuleList()
-        self.hiddenVal = []
+        # networkDimensions = [3, 2, 1] - 3 input 2 hidden 1 output
+        length = len(networkDimen)
+        self.numLayers = length
+        self.lrate = lrate
+        self.hiddenList = []
         
-        for i in range(self.layers):
-            self.hidden.append(nn.Linear(networkDimen[i], networkDimen[i+1]))
+        for inDimen, outDimen in zip(networkDimen, networkDimen[1:length-1]):    
+            self.hiddenList.append(net_block(inDimen, outDimen))
+            
+        # Add final layer
+        end = nn.Sequential(
+            nn.Linear(networkDimen[length-2], networkDimen[length-1]),
+            nn.LogSoftmax(dim=1))
+        self.hiddenList.append(end)
         
-        # Weights
-        #self.w1 = torch.randn(self.inputSize, self.hiddenSize)
-        #self.w2 = torch.randn(self.hiddenSize, self.outputSize)
+        # Combine into one network
+        self.hidden = nn.Sequential(*self.hiddenList)
+        
+        # Define the loss
+        self.criterion = nn.NLLLoss()
+        # Optimizers require the parameters to optimize and a learning rate
+        self.optimizer = torch.optim.SGD(self.parameters(), lr=self.lrate)        
         
         
     def forward(self, inputVal):
         # Forward multiplication of input values to determine output
-        x = inputVal
-        for i in range(self.layers):
-            x = self.hidden[i](x)
-            self.hiddenVal.append(x)
-            
-        return self.hiddenVal[self.layers]
-    
-    
-    def sigmoid(self, x):
-        # Activation function, return value between 0-1
-        return 1 / (1 + torch.exp(-x))
-    
-    
-    def sigmoidPrime(self, x):
-        # Derivative of sigmoid
-        return x * (1 - x)
-    
-    
-    def backward(self, inputVal, desiredVal, outputVal):
-        # Backpropogation used to determine error and adjust weights
-        self.outputError = desiredVal - outputVal
-        self.outputDelta = self.outputError * self.sigmoidPrime(outputVal)
-        
-        # Determine error in hidden values
-        self.hiddenError = torch.matmul(self.outputDelta, torch.t(self.w2))
-        self.hiddenDelta = self.hiddenError * self.sigmoidPrime(self.hiddenVal)
-        
-        # Adjust weights based on error for each tensor
-        self.w1 += torch.matmul(torch.t(inputVal), self.hiddenDelta)
-        self.w2 += torch.matmul(torch.t(self.hiddenVal), self.outputDelta)
+        return self.hidden(inputVal)
         
         
-    def train(self, inputVal, desiredVal):
-        # Forward and backward pass for training
-        output = self.forward(inputVal)
-        self.backward(inputVal, desiredVal, output)
+    def train(self, inputValues, desiredValues):
+        # Reset gradients
+        self.optimizer.zero_grad()
+        # Forward pass
+        output = self.forward(inputValues)
+        # Calculate losses and asjust weights
+        self.loss = self.criterion(output, desiredValues)
+        self.loss.backward()
+        self.optimizer.step()
+        return self.loss.item()
         
         
     def saveWeights(self, network):
@@ -70,9 +65,11 @@ class Neural_Network(nn.Module):
         # Scale input and predict output
         inputMax, _ = torch.max(inputVal, 0)
         inputVal = torch.div(inputVal, inputMax)
+        output = self.forward(inputVal)
         print("Predicted data based on trained weights: ")
         print("Input (scaled): \n" + str(inputVal))
-        print("Output: \n" + str(self.forward(inputVal)))
+        print("Output: \n" + str(output))
+        return output
         
         
 
@@ -90,7 +87,9 @@ if __name__ == "__main__":
     xPredicted = torch.div(xPredicted, xPredictedMax)
     y = torch.div(y, yMax)
     
-    NN = Neural_Network([2, 3, 1])
+    NN = NeuralNetwork([2, 3, 1])
+    
+    
     
     # Train
     #iterations = 1000   # Number of training iterations
@@ -99,5 +98,5 @@ if __name__ == "__main__":
         #NN.train(x, y)
     
     #NN.saveWeights(NN)
-    #NN = torch.load("NN")
+    NN = torch.load("NN")
     NN.predict(xPredicted)
