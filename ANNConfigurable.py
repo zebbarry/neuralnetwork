@@ -5,7 +5,7 @@ import torch.nn as nn
 def net_block(inParam, outParam):
     return nn.Sequential(
         nn.Linear(inParam, outParam),
-        nn.ReLU())
+        nn.Sigmoid())
 
 
 class NeuralNetwork(nn.Module):
@@ -32,7 +32,7 @@ class NeuralNetwork(nn.Module):
         self.hidden = nn.Sequential(*self.hiddenList)
         
         # Define the loss
-        self.criterion = nn.NLLLoss()
+        self.criterion = nn.L1Loss()
         # Optimizers require the parameters to optimize and a learning rate
         self.optimizer = torch.optim.SGD(self.parameters(), lr=self.lrate)        
         
@@ -48,47 +48,49 @@ class NeuralNetwork(nn.Module):
         # Forward pass
         output = self.forward(inputValues)
         # Calculate losses and asjust weights
+        print(self.hidden[0][0].weight)
         self.loss = self.criterion(output, desiredValues)
         self.loss.backward()
         self.optimizer.step()
         return self.loss.item()
         
         
-    def saveWeights(self, name):
+    def saveWeights(self, path):
         # Saves network using PyTorch internal storage
-        torch.save(self, name)
+        torch.save(self, path)
         
         
-    def loadWeights(self, name):
+    def loadWeights(self, path):
         # Loads network using PyTorch internal storage
-        self = torch.load(name)    
+        return torch.load(path)    
         
         
-    def predict(self, inputVal):
+    def predict(self, inputVal, desiredVal=None):
         # Scale input and predict output
-        inputMax, _ = torch.max(inputVal, 0)
-        inputVal = torch.div(inputVal, inputMax)
-        output = self.forward(inputVal)
-        print("Predicted data based on trained weights: ")
-        print("Input (scaled): \n" + str(inputVal))
-        print("Output: \n" + str(output))
+        output = self.forward(inputVal).exp()
+        
+        print("Desired: " + str(desiredVal))
+        print("Output: ")
+        for i in range(output.size()[1]):
+            print("#{}: {:.3f}".format(i, output.squeeze().detach().numpy()[i]))
+            
         return output
         
         
 
 if __name__ == "__main__":
-    x = torch.tensor(([2, 9], [1, 5], [3, 6]), dtype=torch.long)   # 3 x 2 tensor
-    y = torch.tensor(([92], [100], [89]), dtype=torch.long)        # 3 x 1 tensor
-    xPredicted = torch.tensor(([4, 8]), dtype=torch.long)          # 1 x 2 tensor
+    x = torch.tensor(([2, 9], [1, 5], [3, 6]), dtype=torch.float)   # 3 x 2 tensor
+    y = torch.tensor(([92], [100], [89]), dtype=torch.float)        # 3 x 1 tensor
+    xPredicted = torch.tensor(([4, 8]), dtype=torch.float)          # 1 x 2 tensor
     
     # Scale units
-    xMax, _ = torch.max(x, 0)
-    xPredictedMax, _ = torch.max(xPredicted, 0)
-    yMax, _ = torch.max(y, 0)
+    #xMax, _ = torch.max(x, 0)
+    #xPredictedMax, _ = torch.max(xPredicted, 0)
+    #yMax, _ = torch.max(y, 0)
     
-    x = torch.div(x, xMax)
-    xPredicted = torch.div(xPredicted, xPredictedMax)
-    y = torch.div(y, yMax)
+    #x = torch.div(x, xMax)
+    #xPredicted = torch.div(xPredicted, xPredictedMax)
+    #y = torch.div(y, yMax)
     
     NN = NeuralNetwork([2, 3, 1])
     
@@ -97,7 +99,7 @@ if __name__ == "__main__":
     # Train
     iterations = 1000   # Number of training iterations
     for i in range(1000):
-        loss = NN.train(x, y)
+        loss = NN.train(x.float(), y)
         print("#" + str(i) + " Loss: " + str(loss))
     
     #NN.saveWeights(NN)
