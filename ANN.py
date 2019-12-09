@@ -78,9 +78,9 @@ class NeuralNetwork(nn.Module):
         
 
 if __name__ == "__main__":
-    x = torch.tensor(([2, 9], [1, 5], [3, 6]), dtype=torch.float)   # 3 x 2 tensor
-    y = torch.tensor(([92], [100], [89]), dtype=torch.float)        # 3 x 1 tensor
-    xPredicted = torch.tensor(([4, 8]), dtype=torch.float)          # 1 x 2 tensor
+    x = torch.tensor(([2.0, 9], [1.0, 5.0], [3.0, 6.0]), dtype=torch.float)   # 3 x 2 tensor
+    y = torch.tensor(([92.0], [100.0], [89.0]), dtype=torch.float)        # 3 x 1 tensor
+    xPredicted = torch.tensor(([4.0, 8.0]), dtype=torch.float)          # 1 x 2 tensor
     
     # Scale units
     xMax, _ = torch.max(x, 0)
